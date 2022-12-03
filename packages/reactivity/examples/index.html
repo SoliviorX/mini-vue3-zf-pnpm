@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <div id="app"></div>
+    <script type="module">
+        import { reactive,effect } from '../dist/reactivity.esm.js';
+        // debugger 调试reactive
+        const state = reactive({flag: false, name: 'sds', age: 28})
+        // debugger 调试effect
+        effect(() => {
+            console.log('runner')
+            app.innerHTML = state.flag ? state.name : state.age
+        })
+        setTimeout(() => {
+            debugger    // 调试 trigger
+            state.flag = !state.flag;
+            setTimeout(() => {
+                console.log('修改了age')
+                state.age = 30
+            }, 1000);
+        },1000)
+    </script>
+</body>
+</html>
