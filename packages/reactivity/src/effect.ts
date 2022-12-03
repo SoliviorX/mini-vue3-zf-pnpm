@@ -10,11 +10,13 @@ function cleanupEffect(effect) {
 export let activeEffect;
 export class ReactiveEffect {
   public fn;
+  private scheduler;
   public active = true;
   public deps = [];
   public parent = undefined;
-  constructor(fn) {
+  constructor(fn, scheduler) {
     this.fn = fn;
+    this.scheduler = scheduler;
   }
   run() {
     if (!this.active) {
@@ -35,11 +37,21 @@ export class ReactiveEffect {
       this.parent = undefined;
     }
   }
+  stop() {
+    // 先将effect的依赖全部删除掉，然后将它变成失活态
+    if (this.active) {
+      cleanupEffect(this);
+      this.active = false;
+    }
+  }
 }
 
-export function effect(fn) {
-  const _effect = new ReactiveEffect(fn);
+export function effect(fn, options: any = {}) {
+  const _effect = new ReactiveEffect(fn, options.scheduler);
   _effect.run();
+  const runner = _effect.run.bind(_effect); // 保证_effect执行的时候this是当前的effect
+  runner.effect = _effect;
+  return runner;
 }
 
 // 双向依赖收集
@@ -86,7 +98,12 @@ export function trigger(target, key, newValue, oldValue) {
        * 所以重新执行effect时需要判断重新执行的effect是否是当前的activeEffect，如果是当前的activeEffect，则不重新执行
        */
       if (activeEffect !== effect) {
-        effect.run();
+        // 触发trigger时，有effect.scheduler时执行【scheduler】，没有scheduler时才执行run
+        if (!effect.scheduler) {
+          effect.run();
+        } else {
+          effect.scheduler();
+        }
       }
     });
   }

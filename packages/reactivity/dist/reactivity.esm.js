@@ -8,11 +8,12 @@ function cleanupEffect(effect2) {
 }
 var activeEffect;
 var ReactiveEffect = class {
-  constructor(fn) {
+  constructor(fn, scheduler) {
     this.active = true;
     this.deps = [];
     this.parent = void 0;
     this.fn = fn;
+    this.scheduler = scheduler;
   }
   run() {
     if (!this.active) {
@@ -28,10 +29,19 @@ var ReactiveEffect = class {
       this.parent = void 0;
     }
   }
+  stop() {
+    if (this.active) {
+      cleanupEffect(this);
+      this.active = false;
+    }
+  }
 };
-function effect(fn) {
-  const _effect = new ReactiveEffect(fn);
+function effect(fn, options = {}) {
+  const _effect = new ReactiveEffect(fn, options.scheduler);
   _effect.run();
+  const runner = _effect.run.bind(_effect);
+  runner.effect = _effect;
+  return runner;
 }
 var targetMap = /* @__PURE__ */ new WeakMap();
 function track(target, key) {
@@ -62,7 +72,11 @@ function trigger(target, key, newValue, oldValue) {
     const effects = [...dep];
     effects.forEach((effect2) => {
       if (activeEffect !== effect2) {
-        effect2.run();
+        if (!effect2.scheduler) {
+          effect2.run();
+        } else {
+          effect2.scheduler();
+        }
       }
     });
   }

@@ -13,17 +13,26 @@
         // debugger 调试reactive
         const state = reactive({flag: false, name: 'sds', age: 28})
         // debugger 调试effect
-        effect(() => {
+        const runner = effect(() => {
             console.log('runner')
             app.innerHTML = state.flag ? state.name : state.age
+        },{
+            scheduler() {
+                setTimeout(() => {
+                    runner()
+                },1000)
+                console.log('scheduler')
+            }
         })
+        // runner.effect.stop()
         setTimeout(() => {
-            debugger    // 调试 trigger
+            // debugger    // 调试 trigger
             state.flag = !state.flag;
-            setTimeout(() => {
-                console.log('修改了age')
-                state.age = 30
-            }, 1000);
+            // runner()
+            // setTimeout(() => {
+            //     console.log('修改了age')
+            //     state.age = 30
+            // }, 1000);
         },1000)
     </script>
 </body>
