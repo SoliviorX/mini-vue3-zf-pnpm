@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>watch</title>
+</head>
+<body>
+    <div id="app"></div>
+    <script type="module">
+        import { reactive, effect, watch } from '../dist/reactivity.esm.js';
+        const state = reactive({flag: false, name: 'sds', age: 28})
+        // 1. 第一个参数是一个响应式对象，直接监听整个对象，会【默认开启深度监听】
+        watch(() => state.name,(newValue,oldValue) => {
+            // 对象比较的是引用地址，即使对象的值发生变化，新老对象依然相等（引用地址不变）
+            console.log(newValue,oldValue)
+        })
+        state.name = 'hahahaha'
+        // 2. 第一个参数是一个函数，监听某个属性，可以添加deep配置，手动开启深度监听
+        // watch(() => state.name,(newValue,oldValue) => {
+        //     // 对象比较的是引用地址，即使对象的值发生变化，新老对象依然相等（引用地址不变）
+
+        // })
+        // 3. 第一个参数是一个数组，此时可以监听多个变量【暂时不考虑该情况】
+        // watch([],(newValue,oldValue) => {
+        //     // 对象比较的是引用地址，即使对象的值发生变化，新老对象依然相等（引用地址不变）
+
+        // })
+    </script>
+</body>
+</html>

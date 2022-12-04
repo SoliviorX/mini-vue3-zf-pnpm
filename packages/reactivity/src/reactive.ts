@@ -5,6 +5,10 @@ export const enum ReactiveFlags {
   IS_REACTIVE = "__v_isReactive",
 }
 
+export function isReactive(target) {
+  return !!(target && target[ReactiveFlags.IS_REACTIVE]);
+}
+
 const reactiveMap = new WeakMap(); // 使用 WeakMap 防止内存泄漏
 export function reactive(target) {
   // 1. reactive 只代理对象
