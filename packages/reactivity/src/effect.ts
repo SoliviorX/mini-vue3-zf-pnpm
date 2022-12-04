@@ -54,7 +54,9 @@ export function effect(fn, options: any = {}) {
   return runner;
 }
 
-// 双向依赖收集
+/**
+ * 双向依赖收集
+ */
 const targetMap = new WeakMap();
 export function track(target, key) {
   // 1. 如果取值操作没有发生在effect中，直接返回，不会进行依赖收集
@@ -70,15 +72,21 @@ export function track(target, key) {
   if (!dep) {
     depsMap.set(key, (dep = new Set()));
   }
+  // 3. 依赖收集
+  trackEffects(dep);
+}
+export function trackEffects(dep) {
   let shouldTrack = !dep.has(activeEffect);
-  // 3. 双向收集：一个属性可能对应多个effect，一个effect可能对应多个属性
+  // 双向收集：一个属性可能对应多个effect，一个effect可能对应多个属性
   if (shouldTrack) {
     dep.add(activeEffect);
     activeEffect.deps.push(dep);
   }
 }
 
-// 触发更新
+/**
+ * 触发更新
+ */
 export function trigger(target, key, newValue, oldValue) {
   const depsMap = targetMap.get(target);
   if (!depsMap) {
@@ -86,25 +94,28 @@ export function trigger(target, key, newValue, oldValue) {
   }
   const dep = depsMap.get(key);
   if (dep) {
-    const effects = [...dep];
-    // 执行dep中所有effect的run方法
-    effects.forEach((effect) => {
-      /**
-       * 【问题描述】如果在effect内部修改依赖，会触发effect重新执行，造成死循环；
-       * effect(() => {
-       *  state.age = Math.random();  // 在effect内部修改state，如果此时重新执行当前的activeEffect，会造成死循环
-       *  app.innerHTML = state.age
-       * })
-       * 所以重新执行effect时需要判断重新执行的effect是否是当前的activeEffect，如果是当前的activeEffect，则不重新执行
-       */
-      if (activeEffect !== effect) {
-        // 触发trigger时，有effect.scheduler时执行【scheduler】，没有scheduler时才执行run
-        if (!effect.scheduler) {
-          effect.run();
-        } else {
-          effect.scheduler();
-        }
-      }
-    });
+    triggerEffects(dep);
   }
+}
+export function triggerEffects(dep) {
+  const effects = [...dep];
+  // 执行dep中所有effect的run方法
+  effects.forEach((effect) => {
+    /**
+     * 【问题描述】如果在effect内部修改依赖，会触发effect重新执行，造成死循环；
+     * effect(() => {
+     *  state.age = Math.random();  // 在effect内部修改state，如果此时重新执行当前的activeEffect，会造成死循环
+     *  app.innerHTML = state.age
+     * })
+     * 所以重新执行effect时需要判断重新执行的effect是否是当前的activeEffect，如果是当前的activeEffect，则不重新执行
+     */
+    if (activeEffect !== effect) {
+      // 触发trigger时，有effect.scheduler时执行【scheduler】，没有scheduler时才执行run
+      if (!effect.scheduler) {
+        effect.run();
+      } else {
+        effect.scheduler();
+      }
+    }
+  });
 }

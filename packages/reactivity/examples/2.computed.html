@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>computed</title>
+</head>
+<body>
+    <div id="app"></div>
+    <script type="module">
+        import { reactive, effect, computed } from '../dist/reactivity.esm.js';
+        const state = reactive({flag: false, name: 'sds', age: 28})
+        /**
+         * computed 具有 计算 + 缓存 + 响应式 三个特点：
+         * 1. 计算属性是只读属性，不能直接修改，只能修改它的依赖
+         * 2. 创建计算属性时，默认不执行getter，取值的时候才执行
+         * 3. 多次重复取值，只执行一次（执行完将dirty设为false），不重复执行（取缓存值）
+         * 4. 依赖变化后将dirty设为true，再重新取值时才重新执行getter
+         **/
+        let aliasName = computed(() => {
+            console.log('创建computed时默认不执行');
+            return "*" + state.name
+        })
+        effect(() => {
+            app.innerHTML = aliasName.value
+        })
+        setTimeout(() => {
+            state.name = 'hahahahha'
+        },1000)
+        // setTimeout(() => {
+        //     // 不能直接修改计算属性
+        //     aliasName.value = 'hahahahha'
+        // },1000)
+    </script>
+</body>
+</html>
