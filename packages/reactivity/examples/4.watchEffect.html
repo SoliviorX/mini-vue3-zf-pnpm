@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>watchEffect</title>
+</head>
+<body>
+    <div id="app"></div>
+    <script type="module">
+        import { reactive, effect, watchEffect } from '../dist/reactivity.esm.js';
+        const state = reactive({flag: false, name: 'sds', age: 28})
+        // watchEffect默认会立即执行一次，并收集相关依赖
+        watchEffect(() => {
+            app.innerHTML = state.name
+        })
+        setTimeout(() => {
+            state.name = 'hshshshs'
+        },1000)
+    </script>
+</body>
+</html>
