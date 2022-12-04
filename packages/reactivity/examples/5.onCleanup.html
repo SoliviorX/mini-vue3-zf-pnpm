@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>cleanup</title>
+</head>
+<body>
+    <div id="app"></div>
+    <script type="module">
+        import { reactive, effect, watch } from '../dist/reactivity.esm.js';
+        const state = reactive({flag: false, name: 'sds', age: 28})
+        /**
+         *  【问题描述】：第一次接口请求速度慢，第二次重复请求该接口速度比较快，期望是以最新的请求结果为准，但是第一次请求的结果会覆盖掉第二次的请求结果，与预期不符
+         **/
+        let timer = 3000;
+        function getData(data) {
+            return new Promise((resolve,reject) => {
+                setTimeout(() => {
+                    resolve(data)
+                }, timer -= 1000)
+            })
+        }
+
+        // 1. 手动解决方案
+        // let arr = []
+        // watch(() => state.name, async function(newValue) {
+        //     // let r = await getData(newValue);
+        //     // app.innerHTML = r; 
+        //     let flag = true;
+        //     while (arr.length) {
+        //         let cb = arr.shift()
+        //         cb()
+        //     }
+        //     arr.push(() => {    // 这个函数是个闭包
+        //         flag = false;
+        //     })
+        //     let r = await getData(newValue);
+        //     if(flag) {
+        //         app.innerHTML = r
+        //     }
+        // })
+        // 2. 使用 cleanup 解决
+        watch(() => state.name, async function(newValue, oldValue, onCleanup) {
+            let flag = true;
+            // 这个函数是个【闭包】，会修改上一次的flag为false，导致上一次的结果不会执行下面的 app.innerHTML = r
+            onCleanup(() => {    
+                flag = false;
+            })
+            let r = await getData(newValue);
+            if(flag) {
+                app.innerHTML = r
+            }
+        })
+        state.name = 1
+        state.name = 2
+    </script>
+</body>
+</html>

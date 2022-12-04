@@ -28,12 +28,20 @@ function doWatch(source, cb, { immediate } = {} as any) {
     getter = source;
   }
   let oldValue;
+  let cleanup;
+  function onCleanup(userCb) {
+    cleanup = userCb;
+  }
   // watcher effect 的依赖变化时，就会执行scheduler（即job）
   const job = () => {
     // 2.1. 如果是watch API，在 scheduler 中调用 cb
     if (cb) {
       let newValue = effect.run(); // 再次执行effect.run()，即再次执行getter，拿到新值
-      cb(newValue, oldValue);
+      // watch的回调函数入参中如果存在cleanup，优先执行cleanup
+      if (cleanup) {
+        cleanup();
+      }
+      cb(newValue, oldValue, onCleanup);
       oldValue = newValue;
     } else {
       // 2.2. 如果是 watchEffect API，在 scheduler 中再次执行 effect.run
