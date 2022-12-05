@@ -1,3 +1,5 @@
+import { recordEffectScope } from "./effectScope";
+
 function cleanupEffect(effect) {
   // 每次执行effect之前，都应该将该effect从deps所有属性的dep中清理出去，以及清空effect的deps数组
   let { deps } = effect;
@@ -17,6 +19,8 @@ export class ReactiveEffect {
   constructor(fn, scheduler) {
     this.fn = fn;
     this.scheduler = scheduler;
+    // 在 effectScope 内如果创建了 effect，会将该 effect 收集到 effectScope.effects 中
+    recordEffectScope(this);
   }
   run() {
     if (!this.active) {

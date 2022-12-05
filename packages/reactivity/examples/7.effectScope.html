@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>effectScope</title>
+</head>
+<body>
+    <div id="app"></div>
+    <script type="module">
+        import { reactive, effect, effectScope } from '../dist/reactivity.esm.js'
+
+        // 状态管理工具 pinia：在组件中用了一堆响应式数据，例如 计算属性、watch等，需要统一管理这些 effect
+
+        const scope = effectScope()
+        // 外层的 scope 应该收集内层所有的 effect
+        scope.run(() => {
+            const state = reactive({age: 20})
+            effect(() => {
+                console.log(state.age)
+            })
+            setTimeout(() => {
+                state.age++
+            }, 2000);
+            // 创建【独立的scope】，不受外层的scope影响
+            const scope = effectScope(true)
+            scope.run(() => {
+                const state = reactive({age: 30})
+                // 该effect应该被所有外层的scope收集
+                effect(() => {
+                    console.log(state.age)
+                })
+                setTimeout(() => {
+                    state.age++
+                }, 2000);
+            })
+        })
+
+        scope.run(() => {
+            const state = reactive({age: 20})
+            effect(() => {
+                console.log(state.age)
+            })
+            setTimeout(() => {
+                state.age++
+            }, 2000);
+        })
+
+        scope.stop()
+
+    </script>
+</body>
+</html>
