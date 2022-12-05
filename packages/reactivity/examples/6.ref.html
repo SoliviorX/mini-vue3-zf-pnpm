@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ref</title>
+</head>
+<body>
+    <div id="app"></div>
+    <script type="module">
+        import { reactive, ref, watchEffect } from '../dist/reactivity.esm.js'
+        // 一般情况下 ref 处理基本类型
+        // 也可以处理对象，用来替换整个对象（objRef.value = newObj）
+        let person = reactive({name: 'sds', age: 22})
+        let flag = ref(true)
+        console.log(flag)
+        watchEffect(() => {
+            app.innerHTML = flag.value ? person.name : person.age
+        })
+        setTimeout(() => {
+            flag.value = !flag.value
+        },1000)
+    </script>
+</body>
+</html>

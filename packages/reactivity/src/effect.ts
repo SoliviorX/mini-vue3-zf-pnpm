@@ -93,29 +93,29 @@ export function trigger(target, key, newValue, oldValue) {
     return;
   }
   const dep = depsMap.get(key);
-  if (dep) {
-    triggerEffects(dep);
-  }
+  triggerEffects(dep);
 }
 export function triggerEffects(dep) {
-  const effects = [...dep];
-  // 执行dep中所有effect的run方法
-  effects.forEach((effect) => {
-    /**
-     * 【问题描述】如果在effect内部修改依赖，会触发effect重新执行，造成死循环；
-     * effect(() => {
-     *  state.age = Math.random();  // 在effect内部修改state，如果此时重新执行当前的activeEffect，会造成死循环
-     *  app.innerHTML = state.age
-     * })
-     * 所以重新执行effect时需要判断重新执行的effect是否是当前的activeEffect，如果是当前的activeEffect，则不重新执行
-     */
-    if (activeEffect !== effect) {
-      // 触发trigger时，有effect.scheduler时执行【scheduler】，没有scheduler时才执行run
-      if (!effect.scheduler) {
-        effect.run();
-      } else {
-        effect.scheduler();
+  if (dep) {
+    const effects = [...dep];
+    // 执行dep中所有effect的run方法
+    effects.forEach((effect) => {
+      /**
+       * 【问题描述】如果在effect内部修改依赖，会触发effect重新执行，造成死循环；
+       * effect(() => {
+       *  state.age = Math.random();  // 在effect内部修改state，如果此时重新执行当前的activeEffect，会造成死循环
+       *  app.innerHTML = state.age
+       * })
+       * 所以重新执行effect时需要判断重新执行的effect是否是当前的activeEffect，如果是当前的activeEffect，则不重新执行
+       */
+      if (activeEffect !== effect) {
+        // 触发trigger时，有effect.scheduler时执行【scheduler】，没有scheduler时才执行run
+        if (!effect.scheduler) {
+          effect.run();
+        } else {
+          effect.scheduler();
+        }
       }
-    }
-  });
+    });
+  }
 }
