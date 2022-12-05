@@ -9,14 +9,24 @@
 <body>
     <div id="app"></div>
     <script type="module">
-        import { reactive, ref, watchEffect } from '../dist/reactivity.esm.js'
-        // 一般情况下 ref 处理基本类型
+        import { reactive, ref, toRef, toRefs, proxyRefs, watchEffect } from '../dist/reactivity.esm.js'
+        // 1. ref：一般情况下 ref 处理基本类型
         // 也可以处理对象，用来替换整个对象（objRef.value = newObj）
         let person = reactive({name: 'sds', age: 22})
         let flag = ref(true)
-        console.log(flag)
+
+        // 2. toRef 本质上就是一个代理
+        // let name = toRef(person,'name')
+        // let age = toRef(person,'age')
+
+        // 3. toRefs
+        // let { name, age } = toRefs(person)
+
+        // 4. proxyRefs
+        let { name, age } = proxyRefs(toRefs(person))
+        
         watchEffect(() => {
-            app.innerHTML = flag.value ? person.name : person.age
+            app.innerHTML = flag.value ? name : age
         })
         setTimeout(() => {
             flag.value = !flag.value
