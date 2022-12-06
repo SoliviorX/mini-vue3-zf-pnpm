@@ -10,7 +10,12 @@
     <div id="app"></div>
     <script type="module">
         // import { createRenderer, h, render } from '/node_modules/@vue/runtime-dom/dist/runtime-dom.esm-browser.js'
-        import '../dist/runtime-dom.esm.js'
+        import { render, h } from '../dist/runtime-dom.esm.js'
+        const vnode = h('div',[h('span','1'),h('span','2')])
+        render(vnode, app)
+        setTimeout(() => {
+            render(h('div','56'), app)
+        },1000)
         /**
          * runtime-dom：提供DOM操作方法
          * runtime-core：创建虚拟DOM，并且调用runtime-dom提供的方法进行渲染
