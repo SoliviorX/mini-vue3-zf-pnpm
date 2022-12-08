@@ -75,14 +75,18 @@ var patchEvent = (el, key, nextValue) => {
 
 // packages/runtime-dom/src/modules/style.ts
 var patchStyle = (el, prev, next) => {
-  const style = el.style;
-  for (let key in next) {
-    style[key] = next[key];
-  }
-  for (let key in prev) {
-    if (next[key] == null) {
-      style[key] = null;
+  if (next) {
+    const style = el.style;
+    for (let key in next) {
+      style[key] = next[key];
     }
+    for (let key in prev) {
+      if (next[key] == null) {
+        style[key] = null;
+      }
+    }
+  } else {
+    el.removeAttribute("style");
   }
 };
 
@@ -277,6 +281,8 @@ function createRenderer(options) {
           patch(child, c2[newIndex], el);
         }
       }
+      const seq = getSequence(newIndexToOldIndex);
+      let j = seq.length - 1;
       for (let i2 = toBePatched - 1; i2 >= 0; i2--) {
         const nextIndex = s2 + i2;
         const nextChild = c2[nextIndex];
@@ -284,7 +290,11 @@ function createRenderer(options) {
         if (newIndexToOldIndex[i2] == 0) {
           patch(null, nextChild, el, anchor);
         } else {
-          hostInsert(nextChild.el, el, anchor);
+          if (j < 0 || i2 !== seq[j]) {
+            hostInsert(nextChild.el, el, anchor);
+          } else {
+            j--;
+          }
         }
       }
     }
@@ -356,6 +366,47 @@ function createRenderer(options) {
   return {
     render: render2
   };
+}
+function getSequence(arr) {
+  let len = arr.length;
+  let result = [0];
+  let resultLastIndex;
+  let start;
+  let end;
+  let middle;
+  let p = arr.slice(0);
+  for (let i2 = 0; i2 < len; i2++) {
+    const arrI = arr[i2];
+    if (arrI !== 0) {
+      resultLastIndex = result[result.length - 1];
+      if (arr[resultLastIndex] < arrI) {
+        result.push(i2);
+        p[i2] = resultLastIndex;
+        continue;
+      }
+      start = 0;
+      end = result.length - 1;
+      while (start < end) {
+        middle = (start + end) / 2 | 0;
+        if (arr[result[middle]] < arrI) {
+          start = middle + 1;
+        } else {
+          end = middle;
+        }
+      }
+      if (arrI < arr[result[end]]) {
+        p[i2] = result[end - 1];
+        result[end] = i2;
+      }
+    }
+  }
+  let i = result.length;
+  let last = result[i - 1];
+  while (i-- > 0) {
+    result[i] = last;
+    last = p[last];
+  }
+  return result;
 }
 
 // packages/runtime-dom/src/index.ts

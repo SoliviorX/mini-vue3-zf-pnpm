@@ -151,13 +151,13 @@ export function createRenderer(options) {
       let s1 = i; // prevChildren starting index
       let s2 = i; // nextChildren starting index
       // vue2中根据老节点创建映射表，vue3中根据新的key创建映射表
-      const keyToNewIndexMap = new Map();
+      const keyToNewIndexMap = new Map(); // newKey ——> newIndex
       // 遍历 s2-e2 片段，创建映射表，存储newChildren中的索引
       for (i = s2; i <= e2; i++) {
         const vnode = c2[i];
         keyToNewIndexMap.set(vnode.key, i);
       }
-
+      // 需要更新的节点个数
       const toBePatched = e2 - s2 + 1;
       // 创建一个数组，用来标记 s2-e2 片段节点是否被patch过，初始值为0，patch过则设为 oldIndex + 1
       const newIndexToOldIndex = new Array(toBePatched).fill(0); // [0,0,0,0]
@@ -179,20 +179,24 @@ export function createRenderer(options) {
       }
       // console.log(newIndexToOldIndex); // [5,3,4,0]
       // 5.2 创建新节点；调整节点顺序
+      const seq = getSequence(newIndexToOldIndex); // 创建最长递增子序列  [1,2]
+      let j = seq.length - 1;
       for (let i = toBePatched - 1; i >= 0; i--) {
         // a b [e c d h] f g
         const nextIndex = s2 + i; // 获取节点的索引
         const nextChild = c2[nextIndex]; // 获取节点vnode
-        const anchor = nextIndex + 1 < c2.length ? c2[nextIndex + 1].el : null; // 获取锚点
+        // 获取锚点：锚点即获取的节点的下一个节点
+        const anchor = nextIndex + 1 < c2.length ? c2[nextIndex + 1].el : null;
         if (newIndexToOldIndex[i] == 0) {
           // 如果是新元素则创建元素，再插入
           patch(null, nextChild, el, anchor);
         } else {
-          // 如果不是新元素，直接插入节点（倒序插入）
-          hostInsert(nextChild.el, el, anchor); // insert 是移动节点
-          // 这个插入操作有点暴力，每个节点都移动了一次，需要进行优化
-          // 新老children中顺序不变的节点不必移动
-          // TODO...【最长递增子序列】
+          // 【最长递增子序列优化】只有当 i 不是最长递增子序列中的索引时，才移动元素位置
+          if (j < 0 || i !== seq[j]) {
+            hostInsert(nextChild.el, el, anchor); // insert 是移动节点
+          } else {
+            j--;
+          }
         }
       }
     }
@@ -295,3 +299,68 @@ export function createRenderer(options) {
     render,
   };
 }
+
+/**
+ * 求最长递增子序列
+ */
+function getSequence(arr) {
+  let len = arr.length;
+  let result = [0]; // result 是递增子序列元素在arr中的索引值组成的数组，默认先将arr第一个元素放进去比较
+  let resultLastIndex;
+
+  let start;
+  let end;
+  let middle;
+
+  /**
+   * 【问题描述】用当前值替换掉result中存储的较大值，会因为插队，导致结果与预期不同
+   * 【解决方案】在新的值插入到队列中时，永远记住前一个元素的索引，以访别人插队；最后追溯正确的结果
+   */
+  let p = arr.slice(0); // 用来记录入队时记录前面成员的索引
+
+  for (let i = 0; i < len; i++) {
+    const arrI = arr[i];
+    // 在vue中，序列中不会出现0，因为0是新增的节点，会通过patch传入anchor进行创建和插入。如果出现0，直接忽略。
+    if (arrI !== 0) {
+      /**
+       * 贪心算法：只要当前值大于 result 最后索引对应的arr元素值，则将当前索引push到result中
+       */
+      resultLastIndex = result[result.length - 1];
+      if (arr[resultLastIndex] < arrI) {
+        result.push(i);
+        p[i] = resultLastIndex; // 入队时记录前面成员的索引
+        continue; // 跳出本次循环，进入下一次循环
+      }
+
+      /**
+       * 二分查找：二分法，查找result中比当前值大的最近arr元素对应的索引，用当前索引替换它
+       */
+      start = 0;
+      end = result.length - 1;
+      while (start < end) {
+        middle = ((start + end) / 2) | 0; // |0 即向下取整
+        if (arr[result[middle]] < arrI) {
+          start = middle + 1;
+        } else {
+          end = middle;
+        }
+      }
+      // 循环结束后，end 就是比当前 arrI 大的值，将result[end]替换成当前索引i
+      if (arrI < arr[result[end]]) {
+        p[i] = result[end - 1]; // 替换队列中较大值时，记录前面成员的索引
+        result[end] = i;
+      }
+    }
+  }
+
+  // 追溯结果
+  let i = result.length; // 获取最长递增子序列的长度
+  let last = result[i - 1]; // 获取最后一项的索引
+  while (i-- > 0) {
+    result[i] = last; // 用最后一项的索引开始往前追溯
+    last = p[last];
+  }
+  return result;
+}
+// let result = getSequence([2, 5, 8, 4, 6, 7, 9, 3]); // [ 0, 3, 4, 5, 6 ]
+// console.log(result);
